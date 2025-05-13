@@ -1,5 +1,6 @@
 import pytest
 from src.util.dao import DAO
+import json
 
 @pytest.fixture
 def dao_test_client():
