@@ -1,5 +1,7 @@
 import pytest
 from pymongo.errors import WriteError
+from src.util.dao import DAO
+
 
 def test_create_valid_data(dao_test_client):
     """
@@ -64,16 +66,22 @@ def test_create_empty_email(dao_test_client):
 
 def test_create_duplicate_email(dao_test_client):
     """
-    Attemps are made twice with the same email
-    The second operation fails
+    Condition: Attempts are made twice with the same email
+    Expected Output: WriteError raised due to unique constraint in the validator
     """
     data = {
         "email": "duplicate@example.com",
         "isActive": True
     }
-    dao_test_client.create(data)  # First one.
-    with pytest.raises(WriteError):
-        dao_test_client.create(data)  # Second one
+    
+    dao_test_client.create(data)  
+
+    try:
+        dao_test_client.create(data)
+        assert False, "Duplicate email insertion did not fail as expected."
+    except WriteError as e:
+        assert "duplicate key error" in str(e), "Expected a duplicate key error but got a different error."
+
 
 
 def test_create_with_additional_field(dao_test_client):
@@ -85,7 +93,7 @@ def test_create_with_additional_field(dao_test_client):
     data = {
         "email": "extra@example.com",
         "isActive": True,
-        "age": 19  # an extra field
+        "age": 19
     }
     try:
         result = dao_test_client.create(data)
