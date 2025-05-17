@@ -29,10 +29,10 @@ class UserController(Controller):
         email = email.strip()
 
         if not email or email == '@':
-            raise ValueError('Error: invalid email address')
+            raise ValueError('Error: invalid email (adress|address)')
 
         if not re.fullmatch(emailValidator, email):
-            raise ValueError('Error: invalid email address')
+            raise ValueError('Error: invalid email (adress|address)')
 
         try:
             users = self.dao.find({'email': email})
@@ -51,4 +51,5 @@ class UserController(Controller):
             update_result = super().update(id=id, data={'$set': data})
             return update_result
         except Exception as e:
+            logging.error(f"Failed to update user with id {id}: {str(e)}")
             raise
