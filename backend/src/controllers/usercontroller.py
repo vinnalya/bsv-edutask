@@ -31,9 +31,6 @@ class UserController(Controller):
         if not email or email == '@':
             raise ValueError('Error: invalid email address')
 
-        if len(email) == 0:
-            raise ValueError('Error: invalid email address')
-
         if not re.fullmatch(emailValidator, email):
             raise ValueError('Error: invalid email address')
 
