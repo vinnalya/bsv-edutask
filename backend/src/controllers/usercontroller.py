@@ -29,10 +29,13 @@ class UserController(Controller):
         email = email.strip()
 
         if not email or email == '@':
-            raise ValueError('Error: invalid email adress')
+            raise ValueError('Error: invalid email address')
+
+        if len(email) == 0:
+            raise ValueError('Error: invalid email address')
 
         if not re.fullmatch(emailValidator, email):
-            raise ValueError('Error: invalid email adress')
+            raise ValueError('Error: invalid email address')
 
         try:
             users = self.dao.find({'email': email})
