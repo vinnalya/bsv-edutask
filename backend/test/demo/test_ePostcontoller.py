@@ -20,7 +20,7 @@ def mock_logger():
 #test for email and user
 def test_user(system_under_test,mock_dao):
     email = "ferdiie@gmail.com"
-    mock_dao.find.return_value = [{"id:":1, "email:": email}]
+    mock_dao.find.return_value = [{"id": 1, "email": email}]
     result = system_under_test.get_user_by_email(email)
     assert result =={"id":1, "email":email}
 
@@ -48,13 +48,13 @@ def test_multiple_users(system_under_test, mock_dao, mock_logger):
 
 #invaild email
 def test_invalid_email_format(system_under_test):
-    with pytest.raises(ValueError, match="invaild email address"):
+    with pytest.raises(ValueError, match="invalid email address"):
         system_under_test.get_user_by_email("bella.com")
 
 
 #empty string
 def test_empty_string(system_under_test):
-    with pytest.raises(ValueError, match="invaild email address"):
+    with pytest.raises(ValueError, match="invalid email address"):
         system_under_test.get_user_by_email("")
 
 #email whitespace
@@ -70,7 +70,7 @@ def test_database_error(system_under_test, mock_dao):
 
 #@ test
 def test_only_symbol(system_under_test):
-    with pytest.raises(ValueError, match="invaild email adress"):
+    with pytest.raises(ValueError, match="invalid email adress"):
         system_under_test.get_user_by_email("@")
 
 #minimum charecter

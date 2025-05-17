@@ -18,6 +18,13 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
+    services:
+      mongodb:
+        image: mongo:5.0
+        ports:
+          - 27017:27017
+        options: --health-cmd="mongosh --eval 'db.runCommand({ ping: 1 })'" --health-interval=10s --health-timeout=5s --health-retries=5
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v3
@@ -32,7 +39,13 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r backend/requirements.pip
 
+    - name: Wait for MongoDB
+      run: |
+        echo "Waiting for MongoDB to start..."
+        sleep 15
+
     - name: Run Unit Tests
       working-directory: backend
       run: |
         pytest -v
+
