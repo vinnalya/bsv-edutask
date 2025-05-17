@@ -22,42 +22,17 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v3
 
-    - name: Install Docker and Docker Compose
-      run: |
-        sudo apt-get update
-        sudo apt-get remove -y containerd docker docker-engine docker.io
-        sudo apt-get install -y \
-            ca-certificates \
-            curl \
-            gnupg \
-            lsb-release
-
-        sudo mkdir -p /etc/apt/keyrings
-        curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --yes --dearmor -o /etc/apt/keyrings/docker.gpg
-
-        echo \
-          "deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
-          $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-
-        sudo apt-get update
-        sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
-
-    - name: Start Docker Compose Services
-      run: |
-        sudo docker-compose up -d
-        sleep 20
-
-    - name: Verify MongoDB Connection
-      run: |
-        sudo docker-compose exec mongodb mongo --eval "db.runCommand({ ping: 1 })"
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
 
     - name: Install dependencies
       run: |
-        pip install --upgrade pip
+        python -m pip install --upgrade pip
         pip install -r backend/requirements.pip
 
     - name: Run Unit Tests
+      working-directory: backend
       run: |
-        sudo docker-compose exec backend pytest -v
-
-
+        pytest -v
