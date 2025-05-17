@@ -25,15 +25,12 @@ jobs:
     - name: Install Docker and Docker Compose
       run: |
         sudo apt-get update
-        sudo apt-get remove -y docker docker-engine docker.io containerd runc
-        sudo apt-get install -y ca-certificates curl gnupg lsb-release
-        curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --yes --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
-        echo "deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-        sudo apt-get update
-        sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
+        sudo apt-get install -y docker.io
         sudo systemctl start docker
         sudo systemctl enable docker
-        sudo usermod -aG docker $USER
+        sudo curl -L "https://github.com/docker/compose/releases/download/2.12.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+        sudo chmod +x /usr/local/bin/docker-compose
+        docker-compose --version
 
     - name: Start Docker Compose Services
       run: |
@@ -52,4 +49,3 @@ jobs:
     - name: Run Unit Tests
       run: |
         docker-compose exec backend pytest -v
-
