@@ -1,9 +1,11 @@
 from src.controllers.controller import Controller
 from src.util.dao import DAO
 import logging
-import re
 
+
+import re
 emailValidator = re.compile(r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$')
+
 
 class UserController(Controller):
     def __init__(self, dao: DAO):
@@ -27,9 +29,12 @@ class UserController(Controller):
             Exception -- in case any database operation fails
         """
 
+        if re.search(r'^\s|\s$', email):
+            raise ValueError('Invalid email address')
+
         email = email.strip()
 
-        if not email or email == '@' or re.search(r'\s', email):
+        if not email or email == '@' or " " in email:
             raise ValueError('Invalid email address')
 
         if not re.fullmatch(emailValidator, email):
@@ -48,6 +53,19 @@ class UserController(Controller):
             raise e
 
     def update(self, id, data):
+        """
+        Update the user data in the database.
+
+        parameters:
+            id -- the unique identifier of the user
+            data -- a dictionary containing the data to be updated
+
+        returns:
+            update_result -- the result of the database update operation
+        
+        raises:
+            Exception -- if the update operation fails
+        """
         try:
             update_result = super().update(id=id, data={'$set': data})
             return update_result
