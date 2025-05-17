@@ -22,24 +22,22 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v3
 
-    - name: Install Docker and Docker Compose
+    - name: Set up Docker Compose
       run: |
         sudo apt-get update
-        sudo apt-get install -y docker.io
+        sudo apt-get install -y docker.io docker-compose
         sudo systemctl start docker
         sudo systemctl enable docker
-        sudo curl -L "https://github.com/docker/compose/releases/download/2.12.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-        sudo chmod +x /usr/local/bin/docker-compose
-        docker-compose --version
+        sudo docker-compose --version
 
     - name: Start Docker Compose Services
       run: |
-        docker-compose up -d
+        sudo docker-compose up -d
         sleep 20
 
     - name: Verify MongoDB Connection
       run: |
-        docker-compose exec mongodb mongo --eval "db.runCommand({ ping: 1 })"
+        sudo docker-compose exec mongodb mongo --eval "db.runCommand({ ping: 1 })"
 
     - name: Install dependencies
       run: |
@@ -48,4 +46,5 @@ jobs:
 
     - name: Run Unit Tests
       run: |
-        docker-compose exec backend pytest -v
+        sudo docker-compose exec backend pytest -v
+
