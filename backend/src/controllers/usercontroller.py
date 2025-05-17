@@ -29,7 +29,7 @@ class UserController(Controller):
 
         email = email.strip()
 
-        if not email or email == '@' or " " in email:
+        if not email or email == '@' or re.search(r'\s', email):
             raise ValueError('Invalid email address')
 
         if not re.fullmatch(emailValidator, email):
