@@ -61,6 +61,6 @@ jobs:
           done
 
       - name: Run tests with pytest
-        run: pytest -v --durations=10 --timeout=30 test/demo/test_ePostcontoller.py
+        run: pytest -m unit -v --durations=10 --timeout=30
 
 
