@@ -1,4 +1,4 @@
-import pytest 
+import pytest
 from unittest import mock
 from src.controllers.usercontroller import UserController
 import logging
@@ -36,9 +36,9 @@ def test_user_notFound(system_under_test, mock_dao):
     assert result is None
 
 
-#multiple users
+# Multiple users
 @pytest.mark.unit
-def test_multiple_users(system_under_test, mock_dao, mock_logger):
+def test_multiple_users_returns_first_user(system_under_test, mock_dao):
     email = "bellaAndFerdiie@gmail.com"
     mock_dao.find.return_value = [
         {"id": 1, "email": email},
@@ -46,6 +46,16 @@ def test_multiple_users(system_under_test, mock_dao, mock_logger):
     ]
     result = system_under_test.get_user_by_email(email)
     assert result == {"id": 1, "email": email}
+
+# Multiple users, log warning
+@pytest.mark.unit
+def test_multiple_users_logs_warning(system_under_test, mock_dao, mock_logger):
+    email = "bellaAndFerdiie@gmail.com"
+    mock_dao.find.return_value = [
+        {"id": 1, "email": email},
+        {"id": 2, "email": email}
+    ]
+    system_under_test.get_user_by_email(email)
     mock_logger.assert_called_once_with("Found more than one user with email %s", email)
 
 
@@ -77,7 +87,7 @@ def test_database_error(system_under_test, mock_dao):
 
 #@ test
 @pytest.mark.unit
-def test_only_symbol(system_under_test):
+def test_only_at_symbol(system_under_test):
     with pytest.raises(ValueError, match="Invalid email address"):
         system_under_test.get_user_by_email("@")
 
