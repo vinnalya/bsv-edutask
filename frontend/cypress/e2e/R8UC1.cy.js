@@ -1,83 +1,66 @@
+/// <reference types="cypress" />
+const API = Cypress.env('API');
+
 describe('R8UC1 – Create a To-Do Item List', () => {
-  const taskTitle = 'Test Task';
-  const youtubeKey = 'dQw4w9WgXcQ';
-  const todoText = 'Buy groceries';
+  let uid, taskId, user;
 
-  let uid;
-  let email;
-  let name;
-
-  // Create test user before all tests
-  before(function () {
-    cy.fixture('user.json').then((user) => {
-      cy.request({
-        method: 'POST',
-        url: 'http://localhost:5000/users/create',
-        form: true,
-        body: user
-      }).then((res) => {
-        uid = res.body._id.$oid;
-        name = user.firstName + ' ' + user.lastName;
-        email = user.email;
-      });
+  before(() => {
+    cy.viewport(1920, 1080);
+    cy.apiCreateUser().then(({ uid: newUid, user: newUser }) => {
+      uid = newUid;
+      user = newUser;
+      return cy.apiCreateTask(uid);
+    }).then(id => {
+      taskId = id;
     });
   });
 
-
-
-
-
-  // Visit app before each test
   beforeEach(() => {
-    cy.visit('http://localhost:3000');
+    cy.viewport(1920, 1080);
+    cy.intercept('GET', `${API}/tasks/ofuser/**`).as('getTasks');
+    cy.intercept('GET', `${API}/tasks/byid/**`).as('getTaskById');
+    cy.intercept('POST', `${API}/todos/create`).as('createTodo');
+
+    cy.visit('/');
+    cy.contains('div', 'Email Address')
+      .find('input[type=text]')
+      .type(user.email, { delay: 10, force: true });
+    cy.get('form').submit();
+
+    cy.wait('@getTasks');
+    cy.contains('a', 'GUI-test task').click();
+    cy.wait('@getTaskById');
+    cy.get('.popup').should('be.visible');
   });
 
-  it('1.1 – allows user to type a description into the input field', () => {
-    cy.loginWithEmail(email, name);
-    cy.get('input#title')
-      .type(taskTitle)
-      .should('have.value', taskTitle);
+  // 1 - create a todo with minimum input (1 char)
+  it('1 – adds todo with minimum 1-char input', () => {
+    const desc = 'A';
+    cy.get('[placeholder="Add a new todo item"]').type(desc);
+    cy.get('form.inline-form input[type=submit]').click();
+    cy.wait('@createTodo');
+    cy.wait('@getTaskById');
+    cy.contains('li.todo-item', desc).should('be.visible');
   });
 
-
-
-
-
-
-  it('1.2 – creates a new task and adds a new to-do item', () => {
-    cy.loginWithEmail(email, name);
-    cy.createNewTask(taskTitle, youtubeKey);
-    cy.contains('.title-overlay', taskTitle).click();
-    cy.addTodo(todoText);
+  // 2 - create a todo with max 200-char input
+  it('2 – adds todo with maximum 200-char input', () => {
+    const desc = 'x'.repeat(200);
+    cy.get('[placeholder="Add a new todo item"]').type(desc);
+    cy.get('form.inline-form input[type=submit]').click();
+    cy.wait('@createTodo');
+    cy.wait('@getTaskById');
+    cy.contains('li.todo-item', desc).should('be.visible');
   });
 
-
-
-
-
-
-  it('1.2 (Alternative) – does not add todo when input is empty', () => {
-    cy.loginWithEmail(email, name);
-    cy.createNewTask(taskTitle, youtubeKey);
-    cy.contains('.title-overlay', taskTitle).click();
-
-    cy.get('.todo-item').then(items => {
-      const initialCount = items.length;
-
-      cy.attemptEmptyTodo();
-      cy.wait(500);
-
-      cy.get('.todo-item').should('have.length', initialCount);
-    });
+  //3 - check if Add button is disabled when input is empty
+  it('3 – disables Add button when input is empty', () => {
+    cy.get('[placeholder="Add a new todo item"]').clear();
+    cy.get('form.inline-form input[type=submit]').should('be.disabled');
   });
 
-
-
-
-
-
-  // Delete test user after all tests
   after(() => {
-    cy.request('DELETE', `http://localhost:5000/users/${uid}`);
+    cy.apiDeleteTask(taskId);
+    cy.apiDeleteUser(uid);
   });
 });

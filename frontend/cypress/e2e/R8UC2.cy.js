@@ -1,83 +1,83 @@
+/// <reference types="cypress" />
+const API = Cypress.env('API');
+
 describe('R8UC2 – Toggle To-Do Item', () => {
-    // define variables reused across tests
-    const taskTitle = 'Toggle Task';
-    const youtubeKey = 'dQw4w9WgXcQ';
-    const todoText = 'Complete this item';
-  
-    let uid;
-    let email;
-    let name;
+  let uid, taskId, user;
 
-
-    before(() => {
-      cy.fixture('user.json').then((user) => {
-        email = user.email;
-        name = `${user.firstName} ${user.lastName}`;
-  
-        return cy.request({
-          method: 'POST',
-          url: 'http://localhost:5000/users/create',
-          form: true,
-          body: user
-        }).then((res) => {
-          uid = res.body._id.$oid;
-        });
-      });
-    });
-  
-    beforeEach(() => {
-
-      cy.visit('http://localhost:3000');
-    });
-  
-
-
-
-    it('2.1 – toggles a todo item from active to done (strikethrough)', () => {
-
-      cy.loginWithEmail(email, name);
-
-  
-      // create a new task and open its detail view
-      cy.createNewTask(taskTitle, youtubeKey);
-      cy.contains('.title-overlay', taskTitle).click();
-  
-      // add a new todo item to the task
-      cy.addTodo(todoText);
-  
-      // click the toggle icon to mark the item as done
-      cy.toggleTodoStatus(todoText);
-  
-      cy.contains('.todo-item', todoText)
-        .find('.checker')
-        .should('have.class', 'checked');
-    });
-
-
-
-
-
-
-
-
-    it('2.2 – toggles a todo item back to active (not strikethrough)', () => {
-
-      cy.loginWithEmail(email, name);
-      cy.contains('.title-overlay', taskTitle).click();
-      
-      // click
-      cy.toggleTodoStatus(todoText);
-  
-      // verify the item now has the 'unchecked' class
-      cy.contains('.todo-item', todoText)
-        .find('.checker')
-        .should('have.class', 'unchecked');
-    });
-  
-    
-    after(() => {
-      // remove the test user from the database
-      cy.request('DELETE', `http://localhost:5000/users/${uid}`);
+  before(() => {
+    cy.viewport(1920, 1080);
+    cy.apiCreateUser().then(({ uid: newUid, user: newUser }) => {
+      uid = newUid;
+      user = newUser;
+      return cy.apiCreateTask(uid);
+    }).then(id => {
+      taskId = id;
     });
   });
-  
+
+  beforeEach(() => {
+    cy.viewport(1920, 1080);
+    cy.intercept('GET', `${API}/tasks/ofuser/**`).as('getTasks');
+    cy.intercept('GET', `${API}/tasks/byid/**`).as('getTaskById');
+    cy.intercept('PUT', `${API}/todos/byid/**`).as('toggleTodo');
+
+    cy.visit('/');
+    cy.contains('div', 'Email Address')
+      .find('input[type=text]')
+      .type(user.email, { delay: 10, force: true });
+    cy.get('form').submit();
+
+    cy.wait('@getTasks');
+    cy.contains('a', 'GUI-test task').click();
+    cy.wait('@getTaskById');
+    cy.get('.popup').should('be.visible');
+  });
+
+  it('1 – toggles todo from active to done (line-through appears)', () => {
+    const desc = 'toggle-done';
+    cy.apiCreateTodo(taskId, desc).then(todo => {
+      const id = todo._id.$oid;
+      cy.apiUpdateTodo(id, { $set: { done: false } });
+    });
+
+    cy.get('button.close-btn').click();
+    cy.contains('a', 'GUI-test task').click();
+    cy.wait('@getTaskById');
+
+    cy.contains('li.todo-item', desc)
+      .find('span.checker')
+      .click({ force: true });
+    cy.wait('@toggleTodo');
+
+    cy.contains('li.todo-item', desc)
+      .find('span.editable')
+      .should('have.css', 'text-decoration-line', 'line-through');
+  });
+
+  it('2 – toggles todo from done to active (line-through removed)', () => {
+    const desc = 'toggle-undone';
+    cy.apiCreateTodo(taskId, desc).then(todo => {
+      const id = todo._id.$oid;
+      cy.apiUpdateTodo(id, { $set: { done: true } });
+    });
+
+    cy.get('button.close-btn').click();
+    cy.contains('a', 'GUI-test task').click();
+    cy.wait('@getTaskById');
+
+    // Toggle undone
+    cy.contains('li.todo-item', desc).find('span.checker').click({ force: true });
+    cy.wait('@toggleTodo');
+
+    // For DOM
+    cy.contains('li.todo-item', desc).find('span.editable')
+      .should(($el) => {
+        expect($el.css('text-decoration-line')).to.eq('none');
+      });
+  });
+
+  after(() => {
+    cy.apiDeleteTask(taskId);
+    cy.apiDeleteUser(uid);
+  });
+});
